@@ -4,4 +4,5 @@ import jakarta.validation.constraints.NotBlank;
 
 public record GetProjectByIdQuery(@NotBlank(message = "id must not be blank") String id)
 {
+
 }
