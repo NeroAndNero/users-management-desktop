@@ -1,107 +1,138 @@
 package com.jcaa.usersmanagement.infrastructure.config;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
-
-import com.jcaa.usersmanagement.infrastructure.adapter.persistence.exception.PersistenceException;
+import com.jcaa.usersmanagement.application.port.in.CreateProjectUseCase;
+import com.jcaa.usersmanagement.application.port.in.CreateUserUseCase;
+import com.jcaa.usersmanagement.application.port.in.DeleteProjectUseCase;
+import com.jcaa.usersmanagement.application.port.in.DeleteUserUseCase;
+import com.jcaa.usersmanagement.application.port.in.GetAllProjectsUseCase;
+import com.jcaa.usersmanagement.application.port.in.GetAllUsersUseCase;
+import com.jcaa.usersmanagement.application.port.in.GetProjectByIdUseCase;
+import com.jcaa.usersmanagement.application.port.in.GetUserByIdUseCase;
+import com.jcaa.usersmanagement.application.port.in.LoginUseCase;
+import com.jcaa.usersmanagement.application.port.in.UpdateProjectUseCase;
+import com.jcaa.usersmanagement.application.port.in.UpdateUserUseCase;
+import com.jcaa.usersmanagement.application.service.CreateProjectService;
+import com.jcaa.usersmanagement.application.service.CreateUserService;
+import com.jcaa.usersmanagement.application.service.DeleteProjectService;
+import com.jcaa.usersmanagement.application.service.DeleteUserService;
+import com.jcaa.usersmanagement.application.service.EmailNotificationService;
+import com.jcaa.usersmanagement.application.service.GetAllProjectsService;
+import com.jcaa.usersmanagement.application.service.GetAllUsersService;
+import com.jcaa.usersmanagement.application.service.GetProjectByIdService;
+import com.jcaa.usersmanagement.application.service.GetUserByIdService;
+import com.jcaa.usersmanagement.application.service.LoginService;
+import com.jcaa.usersmanagement.application.service.UpdateProjectService;
+import com.jcaa.usersmanagement.application.service.UpdateUserService;
+import com.jcaa.usersmanagement.infrastructure.adapter.email.JavaMailEmailSenderAdapter;
+import com.jcaa.usersmanagement.infrastructure.adapter.email.SmtpConfig;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConnectionFactory;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.ProjectRepositoryMemory;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.UserRepositoryMySQL;
+import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.ProjectController;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.UserController;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
+import jakarta.validation.Validator;
 
-/**
- * Tests for DependencyContainer.
- *
- * <p>Covers: full wiring succeeds and exposes a non-null UserController, the same UserController
- * instance is returned on every call (immutable composition graph), and a database connection
- * failure during construction propagates as PersistenceException. DriverManager is mocked
- * statically so no real database is required.
- */
-@DisplayName("DependencyContainer")
-@ExtendWith(MockitoExtension.class)
-class DependencyContainerTest {
+public final class DependencyContainerTest {
 
-  @Mock private Connection mockConnection;
+  private static final String DB_HOST = "db.host";
+  private static final String DB_PORT = "db.port";
+  private static final String DB_NAME = "db.name";
+  private static final String DB_USER = "db.username";
+  private static final String DB_PASSWORD = "db.password";
 
-  // ── constructor + userController() — happy path
+  private static final String SMTP_HOST = "smtp.host";
+  private static final String SMTP_PORT = "smtp.port";
+  private static final String SMTP_USER = "smtp.username";
+  private static final String SMTP_PASSWORD = "smtp.password";
+  private static final String SMTP_FROM = "smtp.from.address";
+  private static final String SMTP_FROM_NAME = "smtp.from.name";
 
-  @Test
-  @DisplayName(
-      "constructor wires all dependencies and userController() returns a non-null UserController")
-  void shouldWireAllDependenciesAndExposeNonNullUserController() {
-    // Arrange
-    try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
-      mockedDriverManager
-          .when(
-              () ->
-                  DriverManager.getConnection(
-                      any(String.class), any(String.class), any(String.class)))
-          .thenReturn(mockConnection);
+  private final UserController userController;
+  private final ProjectController projectController;
 
-      // Act
-      final DependencyContainer container = new DependencyContainer();
+  public DependencyContainerTest() {
+    final AppProperties properties = new AppProperties();
 
-      // Assert
-      assertNotNull(
-          container.userController(),
-          "userController() must return a non-null UserController after successful construction");
-    }
+    final Connection connection = buildDatabaseConnection(properties);
+    final UserRepositoryMySQL userRepository = new UserRepositoryMySQL(connection);
+
+    final JavaMailEmailSenderAdapter emailSender =
+        new JavaMailEmailSenderAdapter(buildSmtpConfig(properties));
+    final EmailNotificationService emailNotification = new EmailNotificationService(emailSender);
+
+    // Construir Validator para las validaciones en la capa de aplicación
+    final Validator validator = ValidatorProvider.buildValidator();
+
+    final CreateUserUseCase createUserUseCase =
+        new CreateUserService(userRepository, userRepository, emailNotification, validator);
+    final UpdateUserUseCase updateUserUseCase =
+        new UpdateUserService(userRepository, userRepository, userRepository, emailNotification, validator);
+    final DeleteUserUseCase deleteUserUseCase =
+        new DeleteUserService(userRepository, userRepository, validator);
+    final GetUserByIdUseCase getUserByIdUseCase = new GetUserByIdService(userRepository, validator);
+    final GetAllUsersUseCase getAllUsersUseCase = new GetAllUsersService(userRepository);
+    final LoginUseCase loginUseCase = new LoginService(userRepository, validator);
+
+    this.userController =
+        new UserController(
+            createUserUseCase,
+            updateUserUseCase,
+            deleteUserUseCase,
+            getUserByIdUseCase,
+            getAllUsersUseCase,
+            loginUseCase);
+
+    // Project usa un adaptador en memoria: no requiere base de datos
+    final ProjectRepositoryMemory projectRepository = new ProjectRepositoryMemory();
+
+    final CreateProjectUseCase createProjectUseCase =
+        new CreateProjectService(projectRepository, projectRepository, validator);
+    final UpdateProjectUseCase updateProjectUseCase =
+        new UpdateProjectService(projectRepository, projectRepository, validator);
+    final DeleteProjectUseCase deleteProjectUseCase =
+        new DeleteProjectService(projectRepository, projectRepository, validator);
+    final GetProjectByIdUseCase getProjectByIdUseCase =
+        new GetProjectByIdService(projectRepository, validator);
+    final GetAllProjectsUseCase getAllProjectsUseCase = new GetAllProjectsService(projectRepository);
+
+    this.projectController =
+        new ProjectController(
+            createProjectUseCase,
+            updateProjectUseCase,
+            deleteProjectUseCase,
+            getProjectByIdUseCase,
+            getAllProjectsUseCase);
   }
 
-  // ── userController() — immutable composition graph
-
-  @Test
-  @DisplayName("userController() returns the same UserController instance on every call")
-  void shouldReturnTheSameUserControllerInstanceOnEveryCall() {
-    // Arrange
-    try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
-      mockedDriverManager
-          .when(
-              () ->
-                  DriverManager.getConnection(
-                      any(String.class), any(String.class), any(String.class)))
-          .thenReturn(mockConnection);
-      final DependencyContainer container = new DependencyContainer();
-
-      // Act
-      final UserController first = container.userController();
-      final UserController second = container.userController();
-
-      // Assert
-      assertSame(first, second, "userController() must return the same instance on every call");
-    }
+  public UserController userController() {
+    return userController;
   }
 
-  // ── constructor — database failure → PersistenceException
+  public ProjectController projectController() {
+    return projectController;
+  }
 
-  @Test
-  @DisplayName("constructor propagates PersistenceException when the database connection fails")
-  void shouldPropagatePersistenceExceptionWhenDatabaseConnectionFails() {
-    // Arrange — exception built before the static mock to avoid intercepting DriverManager
-    // internal calls during SQLException construction
-    final SQLException cause = new SQLException("Connection refused");
-    try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
-      mockedDriverManager
-          .when(
-              () ->
-                  DriverManager.getConnection(
-                      any(String.class), any(String.class), any(String.class)))
-          .thenThrow(cause);
+  private static Connection buildDatabaseConnection(final AppProperties properties) {
+    final DatabaseConfig config =
+        new DatabaseConfig(
+            properties.get(DB_HOST),
+            properties.getInt(DB_PORT),
+            properties.get(DB_NAME),
+            properties.get(DB_USER),
+            properties.get(DB_PASSWORD));
+    return DatabaseConnectionFactory.createConnection(config);
+  }
 
-      // Act & Assert
-      assertThrows(
-          PersistenceException.class,
-          DependencyContainer::new,
-          "PersistenceException must propagate without wrapping when DriverManager throws SQLException");
-    }
+  private static SmtpConfig buildSmtpConfig(final AppProperties properties) {
+    return new SmtpConfig(
+        properties.get(SMTP_HOST),
+        properties.getInt(SMTP_PORT),
+        properties.get(SMTP_USER),
+        properties.get(SMTP_PASSWORD),
+        properties.get(SMTP_FROM),
+        properties.get(SMTP_FROM_NAME));
   }
 }
