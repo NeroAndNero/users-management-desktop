@@ -1,23 +1,35 @@
 package com.jcaa.usersmanagement.infrastructure.config;
 
+import com.jcaa.usersmanagement.application.port.in.CreateProjectUseCase;
 import com.jcaa.usersmanagement.application.port.in.CreateUserUseCase;
+import com.jcaa.usersmanagement.application.port.in.DeleteProjectUseCase;
 import com.jcaa.usersmanagement.application.port.in.DeleteUserUseCase;
+import com.jcaa.usersmanagement.application.port.in.GetAllProjectsUseCase;
 import com.jcaa.usersmanagement.application.port.in.GetAllUsersUseCase;
+import com.jcaa.usersmanagement.application.port.in.GetProjectByIdUseCase;
 import com.jcaa.usersmanagement.application.port.in.GetUserByIdUseCase;
 import com.jcaa.usersmanagement.application.port.in.LoginUseCase;
+import com.jcaa.usersmanagement.application.port.in.UpdateProjectUseCase;
 import com.jcaa.usersmanagement.application.port.in.UpdateUserUseCase;
+import com.jcaa.usersmanagement.application.service.CreateProjectService;
 import com.jcaa.usersmanagement.application.service.CreateUserService;
+import com.jcaa.usersmanagement.application.service.DeleteProjectService;
 import com.jcaa.usersmanagement.application.service.DeleteUserService;
 import com.jcaa.usersmanagement.application.service.EmailNotificationService;
+import com.jcaa.usersmanagement.application.service.GetAllProjectsService;
 import com.jcaa.usersmanagement.application.service.GetAllUsersService;
+import com.jcaa.usersmanagement.application.service.GetProjectByIdService;
 import com.jcaa.usersmanagement.application.service.GetUserByIdService;
 import com.jcaa.usersmanagement.application.service.LoginService;
+import com.jcaa.usersmanagement.application.service.UpdateProjectService;
 import com.jcaa.usersmanagement.application.service.UpdateUserService;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.JavaMailEmailSenderAdapter;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.SmtpConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConnectionFactory;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.ProjectRepositoryMemory;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.UserRepositoryMySQL;
+import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.ProjectController;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.UserController;
 
 import java.sql.Connection;
@@ -39,6 +51,7 @@ public final class DependencyContainer {
   private static final String SMTP_FROM_NAME = "smtp.from.name";
 
   private final UserController userController;
+  private final ProjectController projectController;
 
   public DependencyContainer() {
     final AppProperties properties = new AppProperties();
@@ -71,10 +84,35 @@ public final class DependencyContainer {
             getUserByIdUseCase,
             getAllUsersUseCase,
             loginUseCase);
+
+    // Project usa un adaptador en memoria: no requiere base de datos
+    final ProjectRepositoryMemory projectRepository = new ProjectRepositoryMemory();
+
+    final CreateProjectUseCase createProjectUseCase =
+        new CreateProjectService(projectRepository, projectRepository, validator);
+    final UpdateProjectUseCase updateProjectUseCase =
+        new UpdateProjectService(projectRepository, projectRepository, validator);
+    final DeleteProjectUseCase deleteProjectUseCase =
+        new DeleteProjectService(projectRepository, projectRepository, validator);
+    final GetProjectByIdUseCase getProjectByIdUseCase =
+        new GetProjectByIdService(projectRepository, validator);
+    final GetAllProjectsUseCase getAllProjectsUseCase = new GetAllProjectsService(projectRepository);
+
+    this.projectController =
+        new ProjectController(
+            createProjectUseCase,
+            updateProjectUseCase,
+            deleteProjectUseCase,
+            getProjectByIdUseCase,
+            getAllProjectsUseCase);
   }
 
   public UserController userController() {
     return userController;
+  }
+
+  public ProjectController projectController() {
+    return projectController;
   }
 
   private static Connection buildDatabaseConnection(final AppProperties properties) {
