@@ -1,5 +1,14 @@
 package com.jcaa.usersmanagement.infrastructure.config;
 
+<<<<<<< HEAD
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
+
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.exception.PersistenceException;
+=======
 import com.jcaa.usersmanagement.application.port.in.CreateProjectUseCase;
 import com.jcaa.usersmanagement.application.port.in.CreateUserUseCase;
 import com.jcaa.usersmanagement.application.port.in.DeleteProjectUseCase;
@@ -29,13 +38,20 @@ import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.Databa
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConnectionFactory;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.ProjectRepositoryMemory;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.UserRepositoryMySQL;
+>>>>>>> 8db3dba0bc4885620181f2534e1ece68f45a8ebd
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.ProjectController;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.UserController;
 
 import java.sql.Connection;
 import jakarta.validation.Validator;
 
+<<<<<<< HEAD
+@DisplayName("DependencyContainer")
+@ExtendWith(MockitoExtension.class)
+class DependencyContainerTest {
+=======
 public final class DependencyContainerTest {
+>>>>>>> 8db3dba0bc4885620181f2534e1ece68f45a8ebd
 
   private static final String DB_HOST = "db.host";
   private static final String DB_PORT = "db.port";
@@ -43,6 +59,66 @@ public final class DependencyContainerTest {
   private static final String DB_USER = "db.username";
   private static final String DB_PASSWORD = "db.password";
 
+<<<<<<< HEAD
+  @Test
+  @DisplayName("constructor wires all dependencies and userController() returns a non-null UserController")
+  void shouldWireAllDependenciesAndExposeNonNullUserController() {
+    try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
+      mockedDriverManager
+          .when(() -> DriverManager.getConnection(any(String.class), any(String.class), any(String.class)))
+          .thenReturn(mockConnection);
+
+      final DependencyContainer container = new DependencyContainer();
+
+      assertNotNull(container.userController(), "userController() must return a non-null UserController after successful construction");
+    }
+  }
+
+  @Test
+  @DisplayName("userController() returns the same UserController instance on every call")
+  void shouldReturnTheSameUserControllerInstanceOnEveryCall() {
+    try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
+      mockedDriverManager
+          .when(() -> DriverManager.getConnection(any(String.class), any(String.class), any(String.class)))
+          .thenReturn(mockConnection);
+      final DependencyContainer container = new DependencyContainer();
+
+      final UserController first = container.userController();
+      final UserController second = container.userController();
+
+      assertSame(first, second, "userController() must return the same instance on every call");
+    }
+  }
+
+  @Test
+  @DisplayName("projectController() returns a non-null ProjectController, the same on every call")
+  void shouldExposeTheSameNonNullProjectControllerOnEveryCall() {
+    try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
+      mockedDriverManager
+          .when(() -> DriverManager.getConnection(any(String.class), any(String.class), any(String.class)))
+          .thenReturn(mockConnection);
+      final DependencyContainer container = new DependencyContainer();
+
+      final ProjectController first = container.projectController();
+      final ProjectController second = container.projectController();
+
+      assertNotNull(first, "projectController() must return a non-null ProjectController");
+      assertSame(first, second, "projectController() must return the same instance on every call");
+    }
+  }
+
+  @Test
+  @DisplayName("constructor propagates PersistenceException when the database connection fails")
+  void shouldPropagatePersistenceExceptionWhenDatabaseConnectionFails() {
+    final SQLException cause = new SQLException("Connection refused");
+    try (final MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class)) {
+      mockedDriverManager
+          .when(() -> DriverManager.getConnection(any(String.class), any(String.class), any(String.class)))
+          .thenThrow(cause);
+
+      assertThrows(PersistenceException.class, DependencyContainer::new, "PersistenceException must propagate without wrapping when DriverManager throws SQLException");
+    }
+=======
   private static final String SMTP_HOST = "smtp.host";
   private static final String SMTP_PORT = "smtp.port";
   private static final String SMTP_USER = "smtp.username";
@@ -134,5 +210,6 @@ public final class DependencyContainerTest {
         properties.get(SMTP_PASSWORD),
         properties.get(SMTP_FROM),
         properties.get(SMTP_FROM_NAME));
+>>>>>>> 8db3dba0bc4885620181f2534e1ece68f45a8ebd
   }
 }

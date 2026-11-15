@@ -27,11 +27,14 @@ import com.jcaa.usersmanagement.infrastructure.adapter.email.JavaMailEmailSender
 import com.jcaa.usersmanagement.infrastructure.adapter.email.SmtpConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConnectionFactory;
+<<<<<<< HEAD
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.ProjectRepositoryMySQL;
+=======
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.ProjectRepositoryMemory;
+>>>>>>> 8db3dba0bc4885620181f2534e1ece68f45a8ebd
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.UserRepositoryMySQL;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.ProjectController;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.UserController;
-
 import java.sql.Connection;
 import jakarta.validation.Validator;
 
@@ -63,7 +66,6 @@ public final class DependencyContainer {
         new JavaMailEmailSenderAdapter(buildSmtpConfig(properties));
     final EmailNotificationService emailNotification = new EmailNotificationService(emailSender);
 
-    // Construir Validator para las validaciones en la capa de aplicación
     final Validator validator = ValidatorProvider.buildValidator();
 
     final CreateUserUseCase createUserUseCase =
@@ -85,8 +87,13 @@ public final class DependencyContainer {
             getAllUsersUseCase,
             loginUseCase);
 
+<<<<<<< HEAD
+    // AQUI CAMBIAMOS LA MEMORIA POR MYSQL
+    final ProjectRepositoryMySQL projectRepository = new ProjectRepositoryMySQL(connection);
+=======
     // Project usa un adaptador en memoria: no requiere base de datos
     final ProjectRepositoryMemory projectRepository = new ProjectRepositoryMemory();
+>>>>>>> 8db3dba0bc4885620181f2534e1ece68f45a8ebd
 
     final CreateProjectUseCase createProjectUseCase =
         new CreateProjectService(projectRepository, projectRepository, validator);
