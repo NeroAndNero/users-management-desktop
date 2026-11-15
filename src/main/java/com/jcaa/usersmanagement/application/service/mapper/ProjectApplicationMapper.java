@@ -26,13 +26,19 @@ public class ProjectApplicationMapper {
         command.promoterId().trim());
   }
 
-  public ProjectModel fromUpdateCommandToModel(final UpdateProjectCommand command) throws Exception {
-    return new ProjectModel(
-        new ProjectId(command.id()),
-        new ProjectName(command.name()),
-        buildDateRange(command.startDate(), command.endDate()),
-        ProjectStatus.fromString(command.status()),
-        command.promoterId().trim());
+  public ProjectModel fromUpdateCommandToModel(final UpdateProjectCommand command) {
+    try {
+      return new ProjectModel(
+          new ProjectId(command.id()),
+          new ProjectName(command.name()),
+          buildDateRange(command.startDate(), command.endDate()),
+          ProjectStatus.fromString(command.status()),
+          command.promoterId().trim());
+    } catch (final RuntimeException e) {
+      throw e; // Lanza la excepción original (así el test unitario pasa sin quejarse)
+    } catch (final Exception e) {
+      throw new RuntimeException(e); // Satisface al compilador si cree que es una checked exception
+    }
   }
 
   public ProjectId fromGetProjectByIdQueryToProjectId(final GetProjectByIdQuery query) {

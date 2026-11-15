@@ -10,6 +10,12 @@ public final class PersistenceException extends RuntimeException {
   private static final String MESSAGE_DELETE = "Failed to delete user with ID: '%s'.";
   private static final String MESSAGE_CONNECTION = "Could not establish database connection.";
 
+  private static final String MESSAGE_PROJECT_SAVE = "Failed to save project with ID: '%s'.";
+  private static final String MESSAGE_PROJECT_UPDATE = "Failed to update project with ID: '%s'.";
+  private static final String MESSAGE_PROJECT_FIND = "Failed to find project with ID: '%s'.";
+  private static final String MESSAGE_PROJECT_ALL = "Failed to retrieve all projects.";
+  private static final String MESSAGE_PROJECT_DELETE = "Failed to delete project with ID: '%s'.";
+
   private PersistenceException(final String message, final Throwable cause) {
     super(message, cause);
   }
@@ -44,5 +50,29 @@ public final class PersistenceException extends RuntimeException {
 
   public static PersistenceException becauseConnectionFailed(final Throwable cause) {
     return new PersistenceException(MESSAGE_CONNECTION, cause);
+  }
+
+  public static PersistenceException becauseProjectSaveFailed(
+      final String projectId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_PROJECT_SAVE, projectId), cause);
+  }
+
+  public static PersistenceException becauseProjectUpdateFailed(
+      final String projectId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_PROJECT_UPDATE, projectId), cause);
+  }
+
+  public static PersistenceException becauseProjectFindByIdFailed(
+      final String projectId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_PROJECT_FIND, projectId), cause);
+  }
+
+  public static PersistenceException becauseProjectFindAllFailed(final Throwable cause) {
+    return new PersistenceException(MESSAGE_PROJECT_ALL, cause);
+  }
+
+  public static PersistenceException becauseProjectDeleteFailed(
+      final String projectId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_PROJECT_DELETE, projectId), cause);
   }
 }

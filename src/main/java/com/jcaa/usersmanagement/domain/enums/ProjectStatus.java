@@ -8,7 +8,7 @@ public enum ProjectStatus {
   FINISHED,
   CANCELLED;
 
-  public static ProjectStatus fromString(final String value) throws Exception {
+  public static ProjectStatus fromString(final String value) {
     for (final ProjectStatus status : values()) {
       if (status.name().equalsIgnoreCase(value)) {
         return status;
